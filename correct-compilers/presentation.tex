@@ -1,0 +1,360 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass[usenames,dvipsnames]{beamer}
+
+\usepackage{lstautogobble}
+\usepackage{ulem}
+\usepackage{bussproofs}
+\usepackage{xcolor}
+\definecolor{eclipseBlue}{RGB}{42,0,255}
+\definecolor{eclipseGreen}{RGB}{63,127,95}
+
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{stmaryrd}
+
+\newcommand{\Exp}{\texttt{Exp}}
+\newcommand{\compile}{\texttt{compile}}
+\newcommand{\syn}{\textsc{Syntax}}
+\newcommand{\denot}[2][]{\llbracket #2 \rrbracket_{#1}}
+
+\lstnewenvironment{haskell}[1][]
+{\lstset{style=haskell,stringstyle=\color{orange},numbers=none,#1}}{}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[]{Calculating Correct Compilers} % The short title appears at the bottom of every slide, the full title is only on the title page
+
+\author{Cameron Wong} % Your name
+\institute[CS-252R]{CS-252R}
+\date{2022-11-03} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+%\begin{frame}
+%\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+%\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+%\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{}
+
+  \begin{center}
+    \Huge Calculating Correct Compilers
+  \end{center}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{}
+
+  \begin{center}
+    \Huge Calculating Correct \textcolor{red}{Compilers}
+  \end{center}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Compilers?}
+
+  \begin{itemize}
+    \item Let $S$ and $T$ be the \emph{source} and \emph{target} languages
+    \item We define a compiler to be a function
+      \begin{equation}
+        \compile : \syn_{S} \rightarrow \syn_{T}
+      \end{equation}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Compilers?}
+
+  \begin{itemize}
+    \item For our purposes, a compiler is a function from \emph{syntax} to
+      \emph{syntax}
+
+    \item Means we ignore practical concerns like linking, parsing, etc
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Compilers?}
+
+  \begin{itemize}
+    \item Also, assume that the input is well-formed
+      \begin{itemize}
+        \item No type errors, etc
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Compilers?}
+
+  \begin{itemize}
+    \item As a last matter of terminology, the language that \compile{} is
+      written in is called the \emph{host} language.
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{}
+
+  \begin{center}
+    \Huge Calculating \textcolor{red}{Correct} Compilers
+  \end{center}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item Languages are defined by their \emph{syntax} and \emph{semantics}
+    \item If \compile{} acts on syntax, its \textit{correctness} should talk
+      about semantics
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item How do we talk about a relationship between semantics?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item Intuitively, $e$ and $\compile\ e$ should "mean the same thing"
+    \item If we only worry about runtime, then $e$ and $\compile\ e$ should
+      "\emph{do} the same thing"
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item This is actually very difficult to state formally!
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item What \emph{parts} of behavior need to be preserved?
+      \begin{itemize}
+        \item Performance?
+        \item Memory?
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item Even just looking at "return values" takes some machinery
+
+    \item Suppose
+      \begin{itemize}
+        \item $e \rightsquigarrow^* v$ and
+        \item $\compile\ e \rightsquigarrow^* \overline{v}$
+      \end{itemize}
+
+    \item $v$ is in $S$, but $\overline{v}$ is in $T$!
+
+    \item For example, if $S$ is Java and $T$ is assembly, $v$ could be some
+      a complex object!
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item One way is to define a relation $R$ on $\text{values}(S) \times
+      \text{values}(T)$
+
+    \item Can then define correctness as
+      \begin{itemize}
+        \item If $e \rightsquigarrow^* v$ and $\compile\ e \rightsquigarrow^*
+          \overline{v}$, then $R(v, \overline{v})$
+      \end{itemize}
+
+    \item Could generalize and define the relation over $\syn_S \times \syn_T$,
+      but this is typically much harder
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item Another way: define some common \emph{semantic domain} $D$, with
+      \emph{denotation functions}
+      \begin{itemize}
+        \item $\denot[S]{\cdot} : \text{expressions}(S) \rightarrow D$
+        \item $\denot[T]{\cdot} : \text{expressions}(T) \rightarrow D$
+      \end{itemize}
+
+    \item Then correctness is stated as
+      \begin{equation}
+        \denot[S]{e} = \denot[T]{\compile\ e}
+      \end{equation}
+  \end{itemize}
+
+  \footnotetext{This is often called }
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item For us: Our approach will look like the denotation method, embedded
+      into the host language
+      \begin{itemize}
+        \item That is, $\denot[S]{\cdot}$ and $\denot[T]{\cdot}$ will be
+          \emph{host language} functions, rather than purely metatheoretical
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{}
+
+  \begin{center}
+    \Huge \textcolor{red}{Calculating} Correct Compilers
+  \end{center}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Setup}
+
+  \begin{itemize}
+    \item
+  \end{itemize}
+\end{frame}
+
+\end{document}
