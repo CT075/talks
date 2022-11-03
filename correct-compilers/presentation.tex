@@ -79,7 +79,7 @@
 %\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
 %\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
 
-%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
 }
 
 \usepackage{graphicx} % Allows including images
@@ -136,7 +136,7 @@
 \title[]{Calculating Correct Compilers} % The short title appears at the bottom of every slide, the full title is only on the title page
 
 \author{Cameron Wong} % Your name
-\institute[CS-252R]{CS-252R}
+\institute[CS-252R]{Bahr/Hutton 2015, Pickard/Hutton 2021}
 \date{2022-11-03} % Date, can be changed to a custom date
 
 \begin{document}
@@ -846,7 +846,229 @@
 %------------------------------------------------
 
 \begin{frame}[fragile]
-  \frametitle{Use cases}
+  \frametitle{Why?}
+
+  \begin{itemize}
+    \item Why would we \emph{want} to do this?
+
+    \item What use is a compiler with an unknown target language?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Some compiler architecture}
+
+  \begin{itemize}
+    \item Compilers for real languages don't usually go directly from source to
+      target
+
+    \item Instead, they compile through a series of \emph{intermediate
+      representations}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Some compiler architecture}
+
+  \begin{center}
+  \includegraphics[scale=0.5]{sml-sequence}
+  \end{center}
+  \blfootnote{Crary 2020, CMU 15-417 Higher-Order Typed Compilation}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Why?}
+
+  \begin{itemize}
+    \item Each of those "IL-" phases are full-fledged programming languages.
+
+    \item If each step is individually correct, then it should\footnote{
+        It \textit{is} possible to have compiler phases that are individually
+        correct but incorrect when composed (or when composed in a bad order),
+        but this tends to arise from incomplete language specifications
+      } be correct to pipeline them together!
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More compiler architecture (Glasgow Haskell Compiler)}
+
+  \begin{center}
+  \includegraphics[scale=0.2]{hscpipe2}
+  \end{center}
+  \blfootnote{Marlow/Peyton-Jones, The Architecture of Open Source
+  Applications}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Why?}
+
+  \begin{itemize}
+    \item How were those intermediate forms designed?
+
+    \item The developers constructed them ad-hoc to have certain properties,
+      then \emph{separately} reasoned (formally or informally) that the
+      translation is correct
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Why?}
+
+  \begin{itemize}
+    \item What if we could build the intermediate forms and its translation in a
+      correct-by-construction way?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Question break}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item What if we could do all of that, but applied to something else?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item What if we could do all of that, but applied to
+      \sout{something else} semantics themselves?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item Suppose we have the typing rules for some programming language,
+      defined by a function
+      \begin{code}
+        typeof : Expr `$\rightarrow$` Maybe Type
+      \end{code}
+
+    \item The most basic notions of type safety are the twin theorems of
+      \emph{progress} and \emph{preservation}:
+      \begin{itemize}
+        \item Progress: Well-typed programs don't get stuck
+        \item Preservation: Well-typed programs remain well-typed
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item What can equational reasoning tell us about these theorems?
+
+    \item Progress can be witnessed by a function
+      \begin{code}
+        data Progress : Set where
+          STEP : Expr `$\rightarrow$`  Progress
+          DONE : Progress
+
+        progress : (e : Expr) `$\rightarrow$` `$\exists \tau .$`(typeof e `$\equiv \tau$`) `$\rightarrow$` Progress
+      \end{code}
+
+    \item If we assume all expressions are well-typed and \texttt{DONE} for
+      now, we get
+      \begin{code}
+        step : Expr `$\rightarrow$` Expr
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item This means we can define preservation as the equation
+      \begin{code}
+        typeof (step `$e$`) = typeof `$e$`
+      \end{code}
+      (ignoring ill-typed expressions and values for brevity)
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Final Project Concepts}
+
+  \begin{itemize}
+    \item Can we use this equation, and the definition of \texttt{typeof}, to
+      construct an appropriate definition of \texttt{step}?
+
+    \item \mbox{}\onslide<2-> (Yes, it works, and it's so trivial that it got
+      rejected from a workshop earlier this year)
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Making it cooler}
+
+  \begin{itemize}
+    \item Could we derive the \texttt{typeof} function itself? (from
+      \texttt{step}? From the inference rules?)
+    \item Does this generalize to more interesting systems?
+    \item Can we generate the interpreter mechanically, instead of performing
+      the calculation by hand?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Idea: Gradual typing}
+
+  \begin{itemize}
+    \item In a gradually-typed system, we have the "gradual guarantee":
+      \begin{center}
+        "Replacing a type annotation with \texttt{dyn} won't change the result"
+      \end{center}
+
+    \item Can we phrase this as an equation? Something like
+      \begin{equation}
+        \texttt{eval (gradualize $e$)} = \texttt{eval }e
+      \end{equation}
+
+    \item Is this sufficient to derive \texttt{eval}?
+      \begin{itemize}
+        \item Probably not, but maybe with some additional constraints
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \end{document}
