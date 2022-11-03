@@ -19,7 +19,6 @@
 
 \usepackage{lstautogobble}
 \usepackage{ulem}
-\usepackage{bussproofs}
 \usepackage{xcolor}
 \definecolor{eclipseBlue}{RGB}{42,0,255}
 \definecolor{eclipseGreen}{RGB}{63,127,95}
@@ -86,14 +85,49 @@
 \usepackage{graphicx} % Allows including images
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 \usepackage{stmaryrd}
+\usepackage{amsmath}
+\usepackage{environ}
+\usepackage{mathtools}
+\usepackage[absolute,overlay]{textpos}
 
 \newcommand{\Exp}{\texttt{Exp}}
 \newcommand{\compile}{\texttt{compile}}
 \newcommand{\syn}{\textsc{Syntax}}
 \newcommand{\denot}[2][]{\llbracket #2 \rrbracket_{#1}}
 
-\lstnewenvironment{haskell}[1][]
-{\lstset{style=haskell,stringstyle=\color{orange},numbers=none,#1}}{}
+\NewEnviron{totop}{
+  \begin{textblock*}{\paperwidth}(1.5em,0.2\textheight)
+    \raggedright \BODY \hspace{.5em}
+  \end{textblock*}}
+
+\lstnewenvironment{code}[1][]
+{\lstset{
+  frame=none,
+  xleftmargin=2pt,
+  stepnumber=1,
+  numbers=none,
+  belowcaptionskip=\bigskipamount,
+  captionpos=b,
+  escapeinside={*'}{'*},
+  language=Haskell,
+  tabsize=2,
+  emphstyle={\bf},
+  commentstyle=\it,
+  stringstyle=\mdseries\rmfamily,
+  showspaces=false,
+  keywordstyle=\bfseries\rmfamily,
+  columns=flexible,
+  basicstyle=\small\ttfamily,
+  showstringspaces=false,
+  morecomment=[l]\%,
+  escapeinside={`}{`},
+}}{}
+
+\makeatletter
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\newcommand{\N}{\mathbb{N}}
 
 %----------------------------------------------------------------------------------------
 %	TITLE PAGE
@@ -116,19 +150,9 @@
 %\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
 %\end{frame}
 
-%----------------------------------------------------------------------------------------
+%------------------------------------------------------------------------------
 %	PRESENTATION SLIDES
-%----------------------------------------------------------------------------------------
-
-%------------------------------------------------
-
-\begin{frame}
-  \frametitle{}
-
-  \begin{center}
-    \Huge Calculating Correct Compilers
-  \end{center}
-\end{frame}
+%------------------------------------------------------------------------------
 
 %------------------------------------------------
 
@@ -146,36 +170,15 @@
   \frametitle{Compilers?}
 
   \begin{itemize}
-    \item Let $S$ and $T$ be the \emph{source} and \emph{target} languages
-    \item We define a compiler to be a function
+    \item Let $S$ and $T$ be programming languages
+    \item We define a compiler from $S$ to $T$ to be a function
       \begin{equation}
         \compile : \syn_{S} \rightarrow \syn_{T}
       \end{equation}
-  \end{itemize}
-\end{frame}
-
-%------------------------------------------------
-
-\begin{frame}
-  \frametitle{Compilers?}
-
-  \begin{itemize}
-    \item For our purposes, a compiler is a function from \emph{syntax} to
-      \emph{syntax}
-
-    \item Means we ignore practical concerns like linking, parsing, etc
-  \end{itemize}
-\end{frame}
-
-%------------------------------------------------
-
-\begin{frame}
-  \frametitle{Compilers?}
-
-  \begin{itemize}
-    \item Also, assume that the input is well-formed
+      where
       \begin{itemize}
-        \item No type errors, etc
+        \item $S$ is the \emph{source} (or \emph{surface}) language
+        \item $T$ is the \emph{target} language
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -186,8 +189,26 @@
   \frametitle{Compilers?}
 
   \begin{itemize}
-    \item As a last matter of terminology, the language that \compile{} is
-      written in is called the \emph{host} language.
+    \item Usually, we also want an actual implementation of the \compile{}
+      function
+
+    \item This implementation language is called the \emph{host} language
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Compilers?}
+
+  \begin{itemize}
+    \item Ignore practical details like parsing, linking, etc
+
+    \item For simplicity, assume that the input is well-behaved (no type
+      errors, etc)
+
+    \item This means that the \compile{} function is a \emph{total} function
+      from syntax to syntax
   \end{itemize}
 \end{frame}
 
@@ -219,7 +240,7 @@
   \frametitle{Correct?}
 
   \begin{itemize}
-    \item How do we talk about a relationship between semantics?
+    \item What can we say about semantics?
   \end{itemize}
 \end{frame}
 
@@ -229,9 +250,11 @@
   \frametitle{Correct?}
 
   \begin{itemize}
-    \item Intuitively, $e$ and $\compile\ e$ should "mean the same thing"
-    \item If we only worry about runtime, then $e$ and $\compile\ e$ should
-      "\emph{do} the same thing"
+    \item $e$ and $\compile\ e$ should "mean the same thing"
+    \item Let's restrict even further to \emph{dynamic} (runtime) correctness
+      \begin{itemize}
+        \item $e$ and $\compile\ e$ should "\emph{do} the same thing"
+      \end{itemize}
   \end{itemize}
 \end{frame}
 
@@ -255,6 +278,12 @@
       \begin{itemize}
         \item Performance?
         \item Memory?
+      \end{itemize}
+
+    \item $S$ and $T$ may not even use the same execution model! Think
+      \begin{itemize}
+        \item $S =$ lambda calculus
+        \item $T =$ turing machines
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -286,7 +315,7 @@
   \frametitle{Correct?}
 
   \begin{itemize}
-    \item One way is to define a relation $R$ on $\text{values}(S) \times
+    \item Idea: define a relation $R$ on $\text{values}(S) \times
       \text{values}(T)$
 
     \item Can then define correctness as
@@ -309,8 +338,8 @@
     \item Another way: define some common \emph{semantic domain} $D$, with
       \emph{denotation functions}
       \begin{itemize}
-        \item $\denot[S]{\cdot} : \text{expressions}(S) \rightarrow D$
-        \item $\denot[T]{\cdot} : \text{expressions}(T) \rightarrow D$
+        \item $\denot[S]{\cdot} : \text{programs}(S) \rightarrow D$
+        \item $\denot[T]{\cdot} : \text{programs}(T) \rightarrow D$
       \end{itemize}
 
     \item Then correctness is stated as
@@ -319,7 +348,24 @@
       \end{equation}
   \end{itemize}
 
-  \footnotetext{This is often called }
+  \blfootnote{This is also known as a logical relation}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Correct?}
+
+  \begin{itemize}
+    \item $D$ and $\denot{\cdot}$ exist outside of the languages $S$ and $T$,
+      so they can be arbitrarily complicated
+
+    \item Ex
+      \begin{itemize}
+        \item Let $D = \mathbb{N} \cup \{ \bot \}$ such that $\denot{e} =
+          \bot$ if $e$ infinite-loops when executed
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 %------------------------------------------------
@@ -332,7 +378,7 @@
       into the host language
       \begin{itemize}
         \item That is, $\denot[S]{\cdot}$ and $\denot[T]{\cdot}$ will be
-          \emph{host language} functions, rather than purely metatheoretical
+          host language functions, rather than purely metatheoretical
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -349,12 +395,458 @@
 
 %------------------------------------------------
 
+\begin{frame}[fragile]
+  \frametitle{Setup}
+
+  \begin{itemize}
+    \item Define the syntax of our source language as follows:
+
+      \begin{code}
+        data Expr where
+          Val : `$\mathbb{N}$` `$\rightarrow$` Expr
+          Add : Expr `$\rightarrow$` Expr `$\rightarrow$` Expr
+      \end{code}
+
+      (where $\N$ is the type of natural numbers \emph{in our host language})
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Setup}
+
+  \begin{itemize}
+    \item Define the semantics of our source via an interpreter:
+
+      \begin{code}
+        eval : Expr `$\rightarrow$` `$\N$`
+        eval (Val x) = x
+        eval (Add x y) = eval x + eval y
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
 \begin{frame}
   \frametitle{Setup}
 
   \begin{itemize}
-    \item
+    \item Notice that \texttt{eval} transforms a \emph{source language} term
+      into a \emph{host language} value.
+    \item This is exactly what we want for our denotation!
   \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Target language}
+
+  \begin{itemize}
+    \item What about the target language?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+\newcommand{\Expr}{\texttt{Expr}}
+
+\begin{frame}[fragile]
+  \frametitle{Target language?}
+
+  \begin{itemize}
+    \item We'll compile \Expr{} to a yet-undefined stack-based language
+
+      \begin{code}
+        data Code where
+          -- To be determined
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Target language}
+
+  \begin{itemize}
+    \item Since \texttt{eval} outputs a natural number, our stack should
+      contain nats:
+
+      \begin{code}
+        type Stack = [`$\N$`]
+      \end{code}
+
+    \item We'll also define an interpreter on these stacks:
+
+      \begin{code}
+        exec : Code `$\rightarrow$` Stack `$\rightarrow$` Stack
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{The Plan}
+
+  \begin{itemize}
+    \item Goal: Derive the definitions of \texttt{Code} and \texttt{exec}
+      at the same time, using our (TBD) correctness theorem as a guide
+    \item As mentioned, we'll use denotations to state the correctness
+      principle
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Correctness}
+
+  \begin{itemize}
+    \item What to choose for our semantic domain $D$?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Correctness}
+
+  \begin{itemize}
+    \item Since \texttt{eval} returns $\N$, we could choose $D = \N$
+
+    \item Our denotations would be
+      \begin{align*}
+        \denot[\Expr]{e} &= \texttt{eval}\ e \\
+        \denot[\texttt{Code}]{\overline{e}} &=
+          \texttt{head}\ (\texttt{exec}\ \overline{e}\ \texttt{[]})
+      \end{align*}
+
+    \item This suggests the following correctness theorem:
+      \begin{equation}
+        \forall e\ .\ \texttt{exec (compile}\ e\texttt{) []} =
+        \texttt{eval}\ e :: \texttt{[]}
+      \end{equation}
+
+    \item "executing this code from an empty stack gives the right answer"
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Correctness}
+
+  \begin{itemize}
+    \item It turns out that this doesn't work!
+      \footnote{To see why, try to directly prove this theorem for the final
+      \compile{} function we produce at the end}
+
+    \item Instead, we need something stronger:
+      \begin{equation}\label{correctness}
+        \forall e, s\ .\ \texttt{exec (compile}\ e\texttt{)}\ s =
+        \texttt{eval}\ e :: s
+      \end{equation}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Denotations?}
+
+  \begin{itemize}
+    \item Aside: What is the denotation function here?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Denotations?}
+
+  \begin{itemize}
+    \item Choose $D = \texttt{Stack} \rightarrow \texttt{Stack}$:
+
+      \begin{align*}
+        \denot[\Expr]{e} &= \lambda s . \texttt{eval}\ e :: s \\
+        \denot[\texttt{Code}]{\overline{e}} &= \lambda s . \texttt{exec}\ e\ s
+      \end{align*}
+
+    \item Define equality as extensional equality, e.g. $f_1 = f_2$ when
+      $f_1(x) = f_2(x)$.
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{The Plan, restated}
+
+  \begin{itemize}
+    \item At last, all the pieces are in place.
+
+    \item The plan:
+      \begin{itemize}
+        \item Induct on the structure of \Expr{}.
+
+        \item Use equation \ref{correctness} to define \texttt{exec} and
+          \texttt{compile}.
+      \end{itemize}
+
+    \item Because we used equation \ref{correctness} in this derivation,
+      we get the correctness of \texttt{compile} for free!
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Some induction}
+  \begin{totop}
+    Case: $e = \texttt{Val}\ x$
+  \end{totop}
+
+  \begin{itemize}
+    \item Want to find \texttt{exec}, $c$ solving
+
+      \begin{equation}
+        \texttt{exec}\ c\ s = x :: s
+      \end{equation}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Some induction}
+  \begin{totop}
+    Case: $e = \texttt{Val}\ x$
+  \end{totop}
+
+  \begin{itemize}
+    \item Currently, \texttt{Code} has \emph{no} syntax!
+
+    \item So, make a new constructor \texttt{PUSH} for this case.
+      \begin{itemize}
+        \item $x$ is used on the RHS but doesn't appear on the LHS, so
+          \texttt{PUSH} must take $x$ as an argument
+
+        \item Then, define
+
+          \begin{code}
+            compile (Var `$x$`) = PUSH `$x$`
+            exec (PUSH `$x$`) `$s$` = `$x$` :: `$s$`
+          \end{code}
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More induction}
+  \begin{totop}
+    Case: $e = \texttt{Add}\ e_1\ e_2$
+  \end{totop}
+
+  \begin{itemize}
+    \item Need to solve
+
+      \begin{equation}
+        \texttt{exec}\ c\ s = (\texttt{eval}\ e_1 + \texttt{eval}\ e_2) :: s
+      \end{equation}
+
+    \item As before, we define new syntax form \texttt{ADD}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More induction}
+  \begin{totop}
+    Case: $e = \texttt{Add}\ e_1\ e_2$
+  \end{totop}
+
+  \begin{itemize}
+    \item Idea: Have \texttt{Add} take two arguments, as before
+
+      \begin{code}
+        compile (Add `$e_1$` `$e_2$`) = ADD (eval `$e_1$`) (eval `$e_2$`)
+        exec (ADD `$x$` `$y$`) `$s$` = `$x+y$` :: `$s$`
+      \end{code}
+
+    \item Problem: \texttt{compile} uses \texttt{eval}.\footnote{
+        We don't actually want to rule out \texttt{eval} entirely; some
+        compilers actually will call \texttt{eval} on fragments of the source,
+        usually for optimization. We just want to rule out degenerate compilers
+        like this one, which cheat by effectively only translating the return
+        value.
+      }.
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More induction}
+  \begin{totop}
+    Case: $e = \texttt{Add}\ e_1\ e_2$
+  \end{totop}
+
+  \begin{itemize}
+    \item Instead, pass arguments to \texttt{ADD} on the stack $s$:
+
+      \begin{code}
+        exec ADD `$(x::y::s)$` = `$x+y$` :: `$s$`
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More induction}
+  \begin{totop}
+    Case: $e = \texttt{Add}\ e_1\ e_2$
+  \end{totop}
+
+  \begin{itemize}
+    \item Now, use the inductive hypotheses to define $c$:
+      \begin{align*}
+          &\texttt{eval }e_1+\texttt{eval }e_2 :: s \\
+        = &\ \ \langle \text{definition of }\texttt{exec} \rangle \\
+          &\texttt{exec ADD}\ (\texttt{eval }e_1 :: \texttt{eval }e_2 :: s) \\
+        = &\ \ \langle \text{inductive hypothesis, $e_1$} \rangle \\
+          &\texttt{exec ADD}\ (
+            \texttt{exec}\ (\texttt{compile}\ e_1)\ (\texttt{eval }e_2 :: s))
+            \\
+        = &\ \ \langle \text{inductive hypothesis, $e_2$} \rangle \\
+          &\texttt{exec ADD}\ (
+            \texttt{exec}\ (\texttt{compile}\ e_1)\ (
+              \texttt{exec}\ (\texttt{compile}\ e_2)\ s))
+      \end{align*}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{More induction}
+  \begin{totop}
+    Case: $e = \texttt{Add}\ e_1\ e_2$
+  \end{totop}
+
+  \begin{itemize}
+    \item We're actually stuck again, so we need to define more syntax
+
+      \begin{code}
+        exec (`$c_1$` +++ `$c_2$`) `$s$` = exec `$c_2$` (exec `$c_1$` `$s$`)
+      \end{code}
+
+    \item Can finalize with
+
+      \begin{code}
+        compile (Add `$e_1$` `$e_2$`) = compile `$e_1$` +++ `$e_2$` +++ ADD
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Recap}
+
+  \begin{code}
+    data Code where
+      PUSH : `$\N$` `$\rightarrow$` Code
+      ADD : Code
+      _+++_ : Code `$\rightarrow$` Code `$\rightarrow$` Code
+
+    compile : Expr `$\rightarrow$` Code
+    compile (Var `$x$`) = PUSH x
+    compile (Add `$e_1$` `$e_2$`) = compile `$e_1$` +++ `$e_2$` +++ ADD
+
+    exec (PUSH `$x$`) `$s$` = `$x :: s$`
+    exec ADD `$(x :: y :: s)$` = `$x + y :: s$`
+    exec (`$c_1$` +++ `$c_2$`) `$s$` = exec `$c_2$` (exec `$c_1$` `$s$`)
+  \end{code}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Extensions: Dependent Types}
+
+  \begin{itemize}
+    \item Can be used formalize our idea of "well-formed" inputs
+    \item Can also be used to make \texttt{exec} more safe (can rule out
+      $\texttt{exec ADD []}$)
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Extensions: Exceptions}
+
+  \begin{itemize}
+    \item Need to use \emph{code continuations}
+      \begin{code}
+        compile' : Expr `$\rightarrow$` Code `$\rightarrow$` Code
+      \end{code}
+
+    \item Actually, this complicates our denotations:
+      \begin{itemize}
+        \item The \texttt{compile'} function takes both \Expr{} (source)
+          \textit{and} \texttt{Code} (target) arguments
+
+        \item It's not immediately obvious how to define $\denot[\Expr]{\cdot}$
+          in this model
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{How to represent exceptions?}
+
+  \begin{itemize}
+    \item Define a "chained" compiler from \Expr{} to \texttt{Code}:
+      \begin{equation*}
+        \Expr
+          \xrightarrow{\lambda e . (e , \texttt{HALT})}
+        \Expr \times \texttt{Code}
+          \xrightarrow{\texttt{compile'}}
+        \texttt{Code}
+      \end{equation*}
+      \begin{code}
+                  compile `$e$` = compile' `$e$` HALT
+      \end{code}
+
+    \item Now we can \emph{switch} denotations halfway!
+
+    \item Correctness of $\lambda e . (e , \texttt{HALT})$ is obvious
+
+    \item Correctness of $\texttt{compile'}$ can be defined straightforwardly:
+      \begin{align*}
+        D &= \texttt{Stack} \\
+        \denot[\Expr \times \texttt{Code}]{(e,c)} &=
+          \texttt{exec }c\texttt{ (eval $e :: s$)} \\
+        \denot[\texttt{Code}]{(\overline{e},c)} &=
+          \texttt{exec (comp $\overline{e}$ $c$) $s$}
+      \end{align*}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Use cases}
 \end{frame}
 
 \end{document}
