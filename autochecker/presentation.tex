@@ -1,0 +1,370 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass[usenames,dvipsnames]{beamer}
+
+\usepackage{lstautogobble}
+\usepackage{ulem}
+\usepackage{xcolor}
+\definecolor{eclipseBlue}{RGB}{42,0,255}
+\definecolor{eclipseGreen}{RGB}{63,127,95}
+
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{stmaryrd}
+\usepackage{amsmath}
+\usepackage{environ}
+\usepackage{mathtools}
+\usepackage{mathpartir}
+\usepackage[absolute,overlay]{textpos}
+
+\lstnewenvironment{code}[1][]
+{\lstset{
+  frame=none,
+  xleftmargin=2pt,
+  stepnumber=1,
+  numbers=none,
+  belowcaptionskip=\bigskipamount,
+  captionpos=b,
+  escapeinside={*'}{'*},
+  language=Haskell,
+  tabsize=2,
+  emphstyle={\bf},
+  commentstyle=\it,
+  stringstyle=\mdseries\rmfamily,
+  showspaces=false,
+  keywordstyle=\bfseries\rmfamily,
+  columns=flexible,
+  basicstyle=\small\ttfamily,
+  showstringspaces=false,
+  morecomment=[l]\%,
+  escapeinside={`}{`},
+}}{}
+
+\makeatletter
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Exp}{\texttt{Exp}}
+\newcommand{\Type}{\texttt{Ty}}
+\newcommand{\Ctx}{\texttt{Ctx}}
+\newcommand{\synth}{\texttt{synth}}
+\renewcommand{\check}{\texttt{check}}
+\newcommand{\Nat}{\texttt{Nat}}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[]{Typechecker generation via equational reasoning}
+
+\author{Cameron Wong} % Your name
+\institute[CS-252R]{CS-252R final project}
+\date{2022-12-01} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+%\begin{frame}
+%\frametitle{Overview} % Table of contents slide, comment this block out to remove it
+%\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+%\end{frame}
+
+%------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%------------------------------------------------------------------------------
+
+\begin{frame}
+  \frametitle{Driving question}
+
+  \begin{itemize}
+    \item Can we systematically generate a typechecker from a collection of
+      inference rules?
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Typechecking, the problem statement}
+
+  \begin{itemize}
+    \item Let \Exp{} be an arbitrary expression language with typing judgment
+      \begin{equation*}
+        \Gamma \vdash e : \tau
+      \end{equation*}
+    \item Two obvious ways to define a "typechecking" function:
+      \begin{align}
+        \check : \Ctx \rightarrow \Exp \rightarrow \Type \rightarrow \texttt{Bool} \\
+        \synth : \Ctx \rightarrow \Exp \rightarrow \texttt{Option}\ \Type
+      \end{align}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Typechecking, the problem statement}
+
+  \begin{itemize}
+    \item What's our correctness theorem?
+
+    \item "$\Gamma \vdash e : \tau$ if $\synth\ \Gamma\ e \equiv \texttt{Some}\ \tau$"
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Theorem Prover Background}
+
+  \begin{itemize}
+    \item How to represent inference rules in the host language?
+
+    \item In a proof assistant, typically done with an \emph{inductive family}:
+      \begin{code}
+        data `$\_\vdash\_:\_$` : `$\Ctx \rightarrow \Exp \rightarrow \Type \rightarrow\ $`Set
+          typ-nat : `$\forall \{\Gamma$` n`$\} \rightarrow \Gamma \vdash $`Val `$n : \Nat$`
+          typ-add : `$\forall \{\Gamma\ e_1\ e_2\} \rightarrow$`
+            `$\Gamma \vdash e_1 : \Nat \rightarrow \Gamma \vdash e_1 : \Nat \rightarrow$` -- premises
+            `$\Gamma \vdash e_1 + e_2 : \Nat$` -- conclusion
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Typechecking, the problem statement, in Agda}
+
+  \begin{itemize}
+    \item Correctness theorem, in Agda (some noise elided):
+      \begin{code}
+        synth-correct : `$\Gamma \vdash e : \tau \rightarrow \synth\ \Gamma\ e \equiv\ $`Some `$\tau$`
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{The Plan}
+
+  \begin{itemize}
+    \item Use equational reasoning to derive \texttt{synth-correct} and
+      \texttt{synth} simultaneously
+
+    \item Advantage is that we can perform induction on the judgment $\Gamma
+      \vdash e : \tau$ instead of just structurally on $e$
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Source Language}
+
+  \begin{align*}
+    \tau &:= \Nat \mid \texttt{Bool} \mid \tau \rightarrow \tau \\
+    e &:= true \mid false \mid \overline{n} \mid e + e \mid \lambda (x:\tau).e
+  \end{align*}
+  \begin{mathpar}
+    \inferrule*[right=Typ-true]{\phantom{.}}{\Gamma \vdash true : \texttt{Bool}} \and
+    \inferrule*[right=Typ-false]{\phantom{.}}{\Gamma \vdash false : \texttt{Bool}} \and
+    \inferrule*[right=Typ-nat]{\phantom{.}}{\Gamma \vdash \overline{n} : \Nat} \and
+    \inferrule*[right=Typ-add]
+      {\Gamma \vdash e_1 : \Nat \and \Gamma \vdash e_2 : \Nat}
+      {\Gamma \vdash e_1 + e_2 : \Nat} \and
+    \inferrule*[right=Typ-abs]
+      {\Gamma, x:\tau \vdash e : \tau'}
+      {\Gamma \vdash \lambda (x:\tau).e : \tau \rightarrow \tau'}
+  \end{mathpar}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{The Derivation}
+
+  \begin{itemize}
+    \item Proceed by induction on the derivation of $\Gamma \vdash e : \tau$
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-true}$:}
+  }
+  \begin{frame}
+    \frametitle{The Derivation}
+
+    \begin{itemize}
+      \item $e = true$, $\tau = \texttt{Bool}$
+      \item Need proof of $\synth\ \Gamma\ true \equiv \texttt{Some Bool}$
+      \item Currently, no clause of \synth{} for $true$!
+        \begin{itemize}
+          \item So define $\synth\ \Gamma\ true = \texttt{Some Bool}$
+        \end{itemize}
+    \end{itemize}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-true}$:}
+  }
+  \begin{frame}[fragile]
+    \frametitle{The Derivation}
+
+    \begin{code}
+      synth-correct `\textsc{Typ-true}` = begin
+          `$\synth\ \Gamma\ true$`
+        `$\equiv\langle \textnormal{Define clause: }\synth\ \Gamma\ true = \texttt{Some Bool} \rangle$`
+          Some Bool
+        `$\square$`
+    \end{code}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}
+    \frametitle{The Derivation}
+
+    \begin{itemize}
+      \item $e = e_1 + e_2$, $\tau = \Nat$
+      \item Have $\Gamma \vdash e_1 : \Nat$, $\Gamma \vdash e_2 : \Nat$
+      \item Need a proof of $\synth\ \Gamma\ (e_1+e_2) \equiv \Nat$
+      \item Currently, no clause of \synth{} for $e_1+e_2$, so define
+        $\synth\ \Gamma\ (e_1+e_2) = \Nat$
+    \end{itemize}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}
+    \frametitle{The Derivation}
+
+    \begin{itemize}
+      \item Wait, what?
+    \end{itemize}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Problem Statement, revisited}
+
+  \begin{itemize}
+    \item Need to forbid degenerate typecheckers!
+    \item Corretness theorem is insufficiently precise -- need to talk about
+      typechecker failure
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Problem Statement, revisited}
+
+  \begin{itemize}
+    \item Idea 1: New correctness theorem
+      \begin{itemize}
+        \item "$\Gamma \vdash e : \tau$ if \emph{and only if} $\synth
+          \ \Gamma\ e \equiv \texttt{Some}\ \tau$"
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\end{document}
