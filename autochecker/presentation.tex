@@ -125,6 +125,8 @@
 \newcommand{\synth}{\texttt{synth}}
 \renewcommand{\check}{\texttt{check}}
 \newcommand{\Nat}{\texttt{Nat}}
+\newcommand{\Bool}{\texttt{Bool}}
+\newcommand{\notype}{\times}
 
 %----------------------------------------------------------------------------------------
 %	TITLE PAGE
@@ -172,7 +174,7 @@
       \end{equation*}
     \item Two obvious ways to define a "typechecking" function:
       \begin{align}
-        \check : \Ctx \rightarrow \Exp \rightarrow \Type \rightarrow \texttt{Bool} \\
+        \check : \Ctx \rightarrow \Exp \rightarrow \Type \rightarrow \Bool \\
         \synth : \Ctx \rightarrow \Exp \rightarrow \texttt{Option}\ \Type
       \end{align}
   \end{itemize}
@@ -242,12 +244,12 @@
   \frametitle{Source Language}
 
   \begin{align*}
-    \tau &:= \Nat \mid \texttt{Bool} \mid \tau \rightarrow \tau \\
+    \tau &:= \Nat \mid \Bool \mid \tau \rightarrow \tau \\
     e &:= true \mid false \mid \overline{n} \mid e + e \mid \lambda (x:\tau).e
   \end{align*}
   \begin{mathpar}
-    \inferrule*[right=Typ-true]{\phantom{.}}{\Gamma \vdash true : \texttt{Bool}} \and
-    \inferrule*[right=Typ-false]{\phantom{.}}{\Gamma \vdash false : \texttt{Bool}} \and
+    \inferrule*[right=Typ-true]{\phantom{.}}{\Gamma \vdash true : \Bool} \and
+    \inferrule*[right=Typ-false]{\phantom{.}}{\Gamma \vdash false : \Bool} \and
     \inferrule*[right=Typ-nat]{\phantom{.}}{\Gamma \vdash \overline{n} : \Nat} \and
     \inferrule*[right=Typ-add]
       {\Gamma \vdash e_1 : \Nat \and \Gamma \vdash e_2 : \Nat}
@@ -278,7 +280,7 @@
     \frametitle{The Derivation}
 
     \begin{itemize}
-      \item $e = true$, $\tau = \texttt{Bool}$
+      \item $e = true$, $\tau = \Bool$
       \item Need proof of $\synth\ \Gamma\ true \equiv \texttt{Some Bool}$
       \item Currently, no clause of \synth{} for $true$!
         \begin{itemize}
@@ -344,12 +346,22 @@
 %------------------------------------------------
 
 \begin{frame}
-  \frametitle{Problem Statement, revisited}
+  \frametitle{Now what?}
 
   \begin{itemize}
     \item Need to forbid degenerate typecheckers!
-    \item Corretness theorem is insufficiently precise -- need to talk about
-      typechecker failure
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Now what?}
+
+  \begin{itemize}
+    \item Idea 1: Force \synth{} to use all arguments
+    \item This works, but not very principled and probably doesn't scale to a
+      more complex system
   \end{itemize}
 \end{frame}
 
@@ -359,10 +371,198 @@
   \frametitle{Problem Statement, revisited}
 
   \begin{itemize}
-    \item Idea 1: New correctness theorem
+    \item Correctness theorem is insufficiently precise
+    \item Need to talk about failure conditions explicitly
       \begin{itemize}
         \item "$\Gamma \vdash e : \tau$ if \emph{and only if} $\synth
           \ \Gamma\ e \equiv \texttt{Some}\ \tau$"
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}[fragile]
+  \frametitle{Problem Statement, revisited}
+
+  \begin{itemize}
+    \item How to state the "only if"?
+
+    \item A few different formulations:
+      \begin{code}
+        synth-correct' : `$\synth\ \Gamma\ e \equiv\ $`Some `$\tau \rightarrow \Gamma \vdash e : \tau$`
+        synth-correct' : `$\neg(\Gamma \vdash e : \tau) \rightarrow \synth\ \Gamma\ e \equiv\ $`None
+      \end{code}
+
+    \item Neither actually work; instead need to explicitly define a judgment
+      for "ill-typed":
+      \begin{code}
+        synth-correct' : `$\Gamma \vdash e : \notype \rightarrow \synth\ \Gamma\ e \equiv\ $`None
+      \end{code}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Explicitly ill-typed expressions}
+
+  \begin{mathpar}
+    \inferrule*
+      {\Gamma \vdash e_1 : \Bool}
+      {\Gamma \vdash e_1 + e_2 : \notype} \and
+    \inferrule*
+      {\Gamma \vdash e_2 : \Bool}
+      {\Gamma \vdash e_1 + e_2 : \notype} \\
+    \inferrule*
+      {\Gamma \vdash e_1 : \notype}
+      {\Gamma \vdash e_1 + e_2 : \notype} \and
+    \inferrule*
+      {\Gamma \vdash e_2 : \notype}
+      {\Gamma \vdash e_1 + e_2 : \notype} \and
+    \inferrule*
+      {\Gamma, x:\tau \vdash e : \notype}
+      {\Gamma \vdash \lambda (x:\tau).e : \notype}
+  \end{mathpar}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Explicitly ill-typed expressions}
+
+  \begin{itemize}
+    \item Terrible to construct by hand, but easy to do via automation (for
+      decidable type systems)
+
+    \item Rough algorithm to negate a single rule:
+      \begin{itemize}
+        \item For each premise $\Gamma \vdash e : \tau$, generate a bad-type
+          rule with premise $\Gamma \vdash e : \tau'$ for all $\tau' \ne \tau$
+        \item For each premise $\Gamma \vdash e : \tau$, generate a bad-type
+          rule with premise $\Gamma \vdash e : \notype$
+        \item Remove redundant rules
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}
+    \frametitle{Back to the derivation}
+
+    \begin{mathpar}
+      \inferrule*[right=Typ-add]
+        {\Gamma \vdash e_1 : \Nat \and \Gamma \vdash e_2 : \Nat}
+        {\Gamma \vdash e_1 + e_2 : \Nat}
+    \end{mathpar}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}
+    \frametitle{Back to the derivation}
+
+    \begin{itemize}
+      \item Log premises $\Gamma \vdash e_1 : \Nat$ and $\Gamma \vdash e_2 :
+        \Nat$ as $(\Nat, \Nat) \mapsto \Nat$
+      \item Collect all other rules for the $+$ syntax form
+    \end{itemize}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}
+    \frametitle{Back to the derivation}
+
+    \begin{center}
+      \begin{tabular}{l|c}
+        $(\Nat, \Nat)$ & \Nat \\
+        $(\Bool, \_)$ & $\notype$ \\
+        $(\_, \Bool)$ & $\notype$ \\
+        $(\notype, \_)$ & $\notype$ \\
+        $(\_, \notype)$ & $\notype$
+      \end{tabular}
+    \end{center}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+{
+  \addtobeamertemplate{frametitle}{}{%
+    \textcolor{black}{Case $\textsc{Typ-add}$:}
+  }
+  \begin{frame}[fragile]
+    \frametitle{Back to the derivation}
+
+    \begin{code}
+      match (synth `$e_1$`, `$e_2$`) with
+      | (Some Nat, Some Nat) => Some Nat
+      | (Some Bool, _) => None
+      | (_, Some Bool) => None
+      | (None, _) => None
+      | (_, None) => None
+    \end{code}
+  \end{frame}
+}
+
+%------------------------------------------------
+
+\begin{frame}
+  \begin{center}
+    \includegraphics[scale=0.3]{elephant}
+  \end{center}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Reflection}
+
+  \begin{itemize}
+    \item Core idea is not particularly interesting
+    \item Main challenges are engineering-based, not conceptual
+      \begin{itemize}
+        \item How to represent generic syntax for rule input?
+      \end{itemize}
+    \item Limitations are pretty severe:
+      \begin{itemize}
+        \item Typing derivations must be unique
+        \item All variables in premises must appear in conclusion
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+  \frametitle{Status}
+
+  \begin{itemize}
+    \item Generated \synth{} and proofs for STLC and other toy languages
+      \begin{itemize}
+        \item (doesn't work well enough for a demo)
+      \end{itemize}
+
+    \item TODO:
+      \begin{itemize}
+        \item Make a frontend (rules are currently hand-entered)
+        \item Generalize to System F (two different type judgments)
       \end{itemize}
   \end{itemize}
 \end{frame}
